@@ -56,6 +56,18 @@ int main(int argc, char **argv) {
     I = (size_t) (L / hx);
     M = (size_t) (TF / ht);
     double cfl = ht / (hx * hx);
+    //cfl = 0.6;
+
+    if (world_rank == 0) {
+        if (cfl > 0.5) {
+            printf("\n\n**************************** ERRO !! ********************************");
+            printf("\n\n*     cfl = c* (ht /hx*hx) deve ser menor que 0.5 e maior que 0     *");
+            printf("\n\n**************************** ERRO !! ********************************");
+            //MPI_Abort(MPI_COMM_WORLD, 911);
+           return -1;
+        }
+    }
+
 
     if ((debug) && (world_rank == 0)) {
         printf("CFl = %8.3f  ,  I = %8.3f  , M = %8.3f", cfl, (double) I, (double) M);
@@ -134,16 +146,16 @@ int main(int argc, char **argv) {
 
         // Recebe a solucao dos processo 1,2,.. ,world_size-2
         for (int i = 1; i <= world_size - 2; i++)
-            MPI_Recv(&UF[i * my_I+1], my_I, MPI_DOUBLE, i, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&UF[i * my_I + 1], my_I, MPI_DOUBLE, i, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-        MPI_Recv(&UF[(world_size - 1) * my_I+1], I - (world_size - 1) * my_I, MPI_DOUBLE,
+        MPI_Recv(&UF[(world_size - 1) * my_I + 1], I - (world_size - 1) * my_I, MPI_DOUBLE,
                  world_size - 1, world_size - 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
         printf("\n x_i       exato(x_i,0.5)      u(x_i,0.5)        erro = exato - u  ");
         for (int i = 0; i <= 10; i++)
             printf("\n %2.1f       %12.8f      %12.8f      %12.3es    ",
-                   (double) (i) * 0.1, funcao((double)(i)*0.1,0.5), UF[i],
-                   funcao((double)(i)*0.1,0.5)-UF[i]);
+                   (double) (i) * 0.1, funcao((double) (i) * 0.1, 0.5), UF[i],
+                   funcao((double) (i) * 0.1, 0.5) - UF[i]);
 
     } else {
         // Manda para o processo 0 as solucoes feitas em cada pedaço
