@@ -1,0 +1,3 @@
+S:/Programacao/CParalelaUfrgs2020_2/E351EqCalor/cmake-build-debug/CMakeFiles/E351EqCalor.dir
+S:/Programacao/CParalelaUfrgs2020_2/E351EqCalor/cmake-build-debug/CMakeFiles/edit_cache.dir
+S:/Programacao/CParalelaUfrgs2020_2/E351EqCalor/cmake-build-debug/CMakeFiles/rebuild_cache.dir

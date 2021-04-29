@@ -1,0 +1,3 @@
+"C:\Program Files\JetBrains\CLion 2021.1\bin\cmake\win\bin\cmake.exe" -E rm -f CMakeFiles\E351EqCalor.dir/objects.a
+C:\msys64\mingw64\bin\ar.exe cr CMakeFiles\E351EqCalor.dir/objects.a @CMakeFiles\E351EqCalor.dir\objects1.rsp
+C:\msys64\mingw64\bin\clang++.exe -g -Wl,--whole-archive CMakeFiles\E351EqCalor.dir/objects.a -Wl,--no-whole-archive -o E351EqCalor.exe -Wl,--out-implib,libE351EqCalor.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\E351EqCalor.dir\linklibs.rsp
