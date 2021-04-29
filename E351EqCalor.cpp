@@ -28,10 +28,10 @@ e condições iniciais
 #include <mpi.h> // API MPI
 
 // tamanho dos passos discretos
-double ht = 0.0005;  
-double hx = 0.1;
-size_t L = 1; // 0< x < L = x_maximo
-
+double ht = 0.0005; // espaçamento da malha no tempo t
+double hx = 0.1;    // espaçamento da malha em x
+double L = 1.0;     // 0 < x < L = x_maximo
+double TF = 0.5;    // tempo final
 
 int world_size; // numero total de processos
 int world_rank;// ID (rank) do processo
@@ -40,9 +40,11 @@ size_t M;  // tm = t(m) = m * ht,  m = 0,1,..,M , quantidade de passos no tempo
 size_t I;   // xi = x(i) = i * hx,  i = 0,1,..,I, tamanho da malha em x, hx=L/I
 bool debug = true;
 
+
 double funcao(double x, double t) {
     return sin(M_PI * x) * exp(-t * M_PI * M_PI);
 }
+
 
 int main(int argc, char **argv) {
 
@@ -51,11 +53,12 @@ int main(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
 
-    I = (size_t)(L / hx);
+    I = (size_t) (L / hx);
+    M = (size_t) (TF / ht);
     double cfl = ht / (hx * hx);
 
-    if ((debug) && (world_rank==0)) {
-        printf("CFl = %18.14f  e  I = %18.14f",cfl,(double)I);
+    if ((debug) && (world_rank == 0)) {
+        printf("CFl = %8.3f  ,  I = %8.3f  , M = %8.3f", cfl, (double) I, (double) M);
     }
 
     // malha espacial local
@@ -69,7 +72,7 @@ int main(int argc, char **argv) {
     for (size_t j = 0; j <= my_I; j++)
         x[j] = (ip + j) * hx;
 
-    // solução local
+    // solução u0 e u em cada pedaço da malha
     double u0[my_I + 1], u[my_I + 1];
 
     // condição inicial
@@ -87,7 +90,7 @@ int main(int argc, char **argv) {
     double u0I;
 
     // iterações no tempo
-    for (size_t m = 0; m < M; m++) {
+    for (size_t m = 1; m <= M; m++) {
 
         if (world_rank == 0) {
             MPI_Send(&u0[my_I], 1, MPI_DOUBLE, 1, 0, MPI_COMM_WORLD);
@@ -120,7 +123,42 @@ int main(int argc, char **argv) {
         }
     }
 
+    if (world_rank == 0) {
 
+        double UF[M + 1];
+        for (int i = 0; i <= M; i++) //Inicializa a solucao final no processo 0
+            UF[i] = 0.0;
+
+        for (int i = 1; i <= my_I; i++) // Coloca no processo 0 a sua solucao
+            UF[i] = u[i];
+
+        // Recebe a solucao dos processo 1,2,.. ,world_size-2
+        for (int i = 1; i <= world_size - 2; i++)
+            MPI_Recv(&UF[i * my_I+1], my_I, MPI_DOUBLE, i, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        MPI_Recv(&UF[(world_size - 1) * my_I+1], I - (world_size - 1) * my_I, MPI_DOUBLE,
+                 world_size - 1, world_size - 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        printf("\n x_i       exato(x_i,0.5)      u(x_i,0.5)        erro = exato - u  ");
+        for (int i = 0; i <= 10; i++)
+            printf("\n %2.1f       %12.8f      %12.8f      %12.3es    ",
+                   (double) (i) * 0.1, funcao((double)(i)*0.1,0.5), UF[i],
+                   funcao((double)(i)*0.1,0.5)-UF[i]);
+
+    } else {
+        // Manda para o processo 0 as solucoes feitas em cada pedaço
+        MPI_Send(&u[1], my_I, MPI_DOUBLE, 0, world_rank, MPI_COMM_WORLD);
+    }
+
+    /*
+       if (world_rank == 0) {
+
+        printf("\n  x_i        u(x_i,0.5)       exato(x_i,0.5)    erro = exato - u  ");
+        for (int i = 0; i <= 10; i++) {
+            printf("\n %2.1f   %10.6", (double) (i) * 0.1), UF[i]);
+
+        }
+     */
     // Finaliza o MPI
     MPI_Finalize();
 
